@@ -19,10 +19,19 @@
 
 # production
 /build
+/dist-electron
+
+# database
+/data/*.db
+/data/*.sqlite
+/data/*.sqlite3
+*.db
+*.sqlite
 
 # misc
 .DS_Store
 *.pem
+Thumbs.db
 
 # debug
 npm-debug.log*
