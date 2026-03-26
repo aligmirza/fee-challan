@@ -1,12 +1,13 @@
-# Stars Fee Challan Management System
+# Fee Challan Management System
 
-A complete fee challan (voucher) management system built for **Stars Educational Institute** (Kar-e-Khair). Manages student fees, challan generation, family vouchers, payment tracking, and reporting across multiple campuses.
+A complete fee challan (voucher) management system for educational institutes. Manages student fees, challan generation, family vouchers, payment tracking, and reporting across multiple campuses. Available as both a web app and a **Windows desktop installer**.
 
 ## Tech Stack
 
 - **Frontend:** Next.js 16 (App Router) + TypeScript + Tailwind CSS
 - **Backend:** Next.js API Routes (Server-side)
 - **Database:** SQLite via better-sqlite3 (offline-first, zero config)
+- **Desktop:** Electron + electron-builder (Windows/macOS/Linux)
 - **Icons:** Lucide React
 - **PDF:** jsPDF + jspdf-autotable
 
@@ -27,6 +28,26 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 > The SQLite database is auto-created on first run at `data/fee_challan.db` with seed data (2 campuses, 15 students, 5 families, fee structures, sample challans & payments).
 
+## Desktop App (Electron)
+
+```bash
+# Run in Electron (development)
+npm run electron:dev
+
+# Build Windows installer (.exe)
+npm run electron:build:win
+
+# Build macOS installer (.dmg)
+npm run electron:build:mac
+
+# Build Linux installer (.AppImage)
+npm run electron:build:linux
+```
+
+Output: `dist-electron/Fee-Challan-Setup-1.0.0.exe`
+
+See [BUILD.md](BUILD.md) for detailed build instructions.
+
 ## Features
 
 ### Dashboard (`/`)
@@ -40,18 +61,24 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 - Advanced filters: class, section, status
 - Click to view student details or generate challan
 
+### Fee Management (`/fee-management`)
+- **Fee Heads:** Create and manage fee categories (tuition, lab, transport, etc.)
+- **Fee Structures:** Assign amounts per fee head per class with totals
+- **Concession Templates:** Create discount rules (percentage or fixed amount)
+- **Student Concessions:** Search students and assign/remove concessions
+
 ### Challan Generation (`/challan`)
 - Search and select a student
 - Auto-loads fee structure based on class/campus
 - Shows fee breakdown: original, concession, one-time adjustments, net amount
 - Displays active concessions (staff child, scholarship, sibling discount, etc.)
 - Generates unique challan number (e.g., `CTY-CHN-2026-03-00001`)
-- Link to view/print generated challan
+- If challan already exists, shows it with options to view/print or edit fee details
 
 ### Challan Detail & Print (`/challan/[id]`)
-- Full challan view with institute header, student info, fee table
-- Payment recording: cash, bank, cheque, online
-- Print-ready layout
+- Full challan view with dynamic institute header, logo, student info, fee table
+- Bank details printed on challan
+- Print-ready layout with auto-named PDF (e.g., "Ahmed Ali - Fee Challan March 2026")
 
 ### Family Voucher (`/family-voucher`)
 - Search families by name, guardian, or contact number
@@ -66,10 +93,18 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 - Preview count before generating
 - Batch processing with progress feedback
 
+### View Vouchers (`/vouchers`)
+- Browse all generated vouchers and challans
+- Filter and search
+
+### Fee Collection (`/collections`)
+- Record payments against challans
+- Supports cash, bank, cheque, online methods
+- Partial payment tracking
+
 ### Fee Tracker (`/fee-tracker`)
 - View all challans with payment status (paid, unpaid, partially paid, overdue)
 - Filter by status, class, date range
-- Record payments against challans
 - Payment history per challan
 
 ### Student Management (`/students`)
@@ -77,9 +112,7 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 - **Family View:** Students grouped by guardian contact number
 - Add/edit students with full form (personal, academic, family info)
 - Activate/deactivate students (soft delete)
-- **Family Grouping:** Students sharing the same guardian contact number are auto-grouped as siblings
-- **Family CRUD:** View siblings, add new sibling to family, remove from family group
-- Import/Export buttons (UI ready)
+- Import/Export via CSV
 
 ### Campus Management (`/campus`)
 - Multi-campus support
@@ -92,12 +125,25 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 - Collection summary by month
 - Class-wise fee status breakdown
 
+### History (`/history`)
+- Audit trail of all transactions and system changes
+
 ### Settings (`/settings`)
-- **Institution:** Organization name, academic year, billing month
-- **Fee Configuration:** Fee heads, fee structures per class, concession templates
+- **Institution:** Organization name, tagline, academic year, logo upload
+- **Bank Details:** Bank account information for challans
 - **Voucher Design:** Template customization (layout, colors, borders)
-- **Print Configuration:** Paper size, margins, vouchers per page, cut marks
-- **General:** Challan/receipt number format, default due date
+- **Print Configuration:** Paper size, margins, vouchers per page
+
+### API Documentation (`/api-docs`)
+- Interactive Swagger-style API docs
+- 31+ endpoints documented with parameters, examples, and cURL commands
+- Tag-based filtering and search
+
+### Help Center (`/help`)
+- Getting started guide
+- Module-by-module documentation
+- Fee workflow walkthrough
+- FAQs with search
 
 ## Database Schema
 
@@ -107,33 +153,20 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 |-------|---------|
 | `campuses` | Multi-campus support |
 | `families` | Family groups keyed by guardian contact (UNIQUE) |
-| `students` | Student records, `family_id` = guardian's phone number |
+| `students` | Student records linked to families |
 | `classes` / `sections` | Academic structure per campus |
 | `fee_heads` | Fee categories (tuition, lab, transport, etc.) |
 | `fee_structures` | Amount per fee head per class per campus |
 | `concession_templates` | Discount rules (staff child, scholarship, etc.) |
 | `student_concessions` | Applied concessions per student |
-| `sibling_discount_rules` | Auto sibling discounts by order |
 | `challans` / `challan_items` | Generated fee challans with line items |
 | `family_vouchers` | Consolidated family vouchers |
 | `payments` | Payment records with receipt numbers |
-| `bank_accounts` / `wallet_accounts` | Payment collection accounts |
+| `bank_accounts` | Payment collection accounts |
 | `voucher_templates` | Customizable voucher layouts |
 | `print_configs` | Print settings |
-| `late_fee_rules` | Overdue fee rules |
 | `institute_settings` | Global configuration |
-| `users` | User accounts with role-based access |
 | `audit_log` | Activity tracking |
-
-## Family Grouping System
-
-Family groups are created automatically using the **guardian's contact number** as the family identifier:
-
-- When adding a student, enter the guardian's phone number (e.g., `03001234567`)
-- All students sharing the same guardian contact are automatically grouped as siblings
-- The `families` table stores guardian name, family name, address, and voucher preference
-- Family records are auto-created when a new guardian contact is first used
-- Use the **Families** tab in Student Management to view and manage family groups
 
 ## API Routes
 
@@ -141,24 +174,31 @@ Family groups are created automatically using the **guardian's contact number** 
 |----------|---------|-------------|
 | `/api/students` | GET, POST | List/create students |
 | `/api/students/[id]` | GET, PUT, DELETE | Student CRUD |
+| `/api/students/import` | POST | Import students from CSV |
+| `/api/students/export` | GET | Export students |
 | `/api/families` | GET, POST | List/create families |
 | `/api/families/[id]` | GET, PUT | Family details with siblings |
-| `/api/campuses` | GET | List campuses |
+| `/api/campuses` | GET, POST | List/create campuses |
+| `/api/campuses/[id]` | GET, PUT, DELETE | Campus CRUD |
 | `/api/classes` | GET | Classes by campus |
 | `/api/sections` | GET | Sections by class |
-| `/api/fee-heads` | GET | Fee categories |
-| `/api/fee-structures` | GET | Fee amounts by class |
-| `/api/concessions` | GET | Concession templates |
-| `/api/student-concessions` | GET | Student-specific concessions |
+| `/api/fee-heads` | GET, POST | Fee categories |
+| `/api/fee-heads/[id]` | GET, PUT, DELETE | Fee head CRUD |
+| `/api/fee-structures` | GET, POST | Fee amounts by class |
+| `/api/concessions` | GET, POST | Concession templates |
+| `/api/concessions/[id]` | GET, PUT, DELETE | Concession CRUD |
+| `/api/student-concessions` | GET, POST | Student concessions |
+| `/api/student-concessions/[id]` | PUT, DELETE | Update/remove concession |
 | `/api/challans` | GET | List challans |
-| `/api/challans/[id]` | GET | Challan detail |
+| `/api/challans/[id]` | GET, PUT | Challan detail/update |
 | `/api/challans/generate` | POST | Generate challan |
 | `/api/bulk-generate` | POST | Bulk challan generation |
 | `/api/family-vouchers` | GET | List family vouchers |
+| `/api/family-vouchers/[id]` | GET | Family voucher detail |
 | `/api/family-vouchers/generate` | POST | Generate family voucher |
 | `/api/payments` | GET, POST | Payment records |
 | `/api/dashboard` | GET | Dashboard stats |
-| `/api/settings` | GET, PUT | Institute settings |
+| `/api/settings` | GET, POST | Institute settings |
 | `/api/bank-accounts` | GET | Bank accounts |
 | `/api/voucher-templates` | GET | Voucher templates |
 | `/api/print-configs` | GET | Print configurations |
@@ -170,16 +210,22 @@ Family groups are created automatically using the **guardian's contact number** 
 fee-challan/
 ├── src/
 │   ├── app/                    # Next.js App Router pages
-│   │   ├── api/                # API routes (20+ endpoints)
+│   │   ├── api/                # API routes (31+ endpoints)
+│   │   ├── api-docs/           # Swagger-style API documentation
 │   │   ├── bulk-generation/    # Bulk challan generation
 │   │   ├── campus/             # Campus management
 │   │   ├── challan/            # Challan generation & detail
+│   │   ├── collections/        # Fee collection
 │   │   ├── family-voucher/     # Family voucher generation
+│   │   ├── fee-management/     # Fee heads, structures, concessions
 │   │   ├── fee-tracker/        # Payment tracking
+│   │   ├── help/               # Help center
+│   │   ├── history/            # Audit history
 │   │   ├── reports/            # Reports & analytics
 │   │   ├── search/             # Student search
 │   │   ├── settings/           # System settings
-│   │   ├── students/           # Student & family management
+│   │   ├── students/           # Student management
+│   │   ├── vouchers/           # View vouchers
 │   │   ├── layout.tsx          # Root layout with sidebar
 │   │   └── page.tsx            # Dashboard
 │   ├── components/
@@ -189,7 +235,10 @@ fee-challan/
 │   │   └── db.ts               # SQLite connection, schema, seed data
 │   └── types/
 │       └── index.ts            # TypeScript interfaces
+├── electron/                   # Electron main process & preload
 ├── data/                       # SQLite database (auto-created)
+├── electron-builder.config.js  # Desktop app build config
+├── BUILD.md                    # Desktop build instructions
 ├── package.json
 └── README.md
 ```
@@ -208,4 +257,4 @@ The app auto-seeds on first run with:
 
 ## License
 
-Private - Stars Educational Institute (Kar-e-Khair)
+MIT
