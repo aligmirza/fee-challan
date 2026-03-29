@@ -41,11 +41,11 @@ function waitForServer(port, timeout = 30000) {
 async function startNextServer(port) {
   const nextBin = isDev
     ? path.join(__dirname, '..', 'node_modules', '.bin', 'next')
-    : path.join(process.resourcesPath, 'node_modules', '.bin', 'next');
+    : path.join(app.getAppPath(), 'node_modules', '.bin', 'next');
 
   const projectDir = isDev
     ? path.join(__dirname, '..')
-    : process.resourcesPath;
+    : app.getAppPath();
 
   const env = {
     ...process.env,

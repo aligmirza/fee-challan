@@ -23,13 +23,6 @@ module.exports = {
     'postcss.config.mjs',
   ],
 
-  extraResources: [
-    {
-      from: '.next',
-      to: '.next',
-      filter: ['**/*'],
-    },
-  ],
 
   // Windows configuration
   win: {
@@ -79,10 +72,6 @@ module.exports = {
   npmRebuild: true,
   nodeGypRebuild: false,
 
-  // Use asar for packaging
-  asar: true,
-  asarUnpack: [
-    'node_modules/better-sqlite3/**/*',
-    '.next/**/*',
-  ],
+  // Disable asar so child processes (next start) can access files on disk
+  asar: false,
 };
