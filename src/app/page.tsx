@@ -55,23 +55,23 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
           <p className="text-gray-500 mt-1">Welcome back! Here&apos;s your fee collection overview.</p>
         </div>
-        <div className="flex gap-3">
+        <div className="flex gap-2 flex-wrap">
           <Link
             href="/challan"
-            className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition text-sm font-medium"
+            className="flex items-center gap-2 bg-blue-600 text-white px-3 md:px-4 py-2 rounded-lg hover:bg-blue-700 transition text-sm font-medium"
           >
-            <FileText size={16} /> Generate Challan
+            <FileText size={16} /> <span className="hidden sm:inline">Generate </span>Challan
           </Link>
           <Link
             href="/bulk-generation"
-            className="flex items-center gap-2 bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-50 transition text-sm font-medium"
+            className="flex items-center gap-2 bg-white border border-gray-300 text-gray-700 px-3 md:px-4 py-2 rounded-lg hover:bg-gray-50 transition text-sm font-medium"
           >
-            <Printer size={16} /> Bulk Print
+            <Printer size={16} /> <span className="hidden sm:inline">Bulk </span>Print
           </Link>
         </div>
       </div>
@@ -97,7 +97,7 @@ export default function Dashboard() {
                   <div className="flex-1 bg-gray-100 rounded-full h-6 overflow-hidden">
                     <div className="bg-blue-500 h-full rounded-full transition-all duration-500" style={{ width: `${Math.min(100, (mc.amount / max) * 100)}%` }} />
                   </div>
-                  <span className="text-sm font-medium text-gray-700 w-28 text-right">Rs. {mc.amount.toLocaleString()}</span>
+                  <span className="text-xs md:text-sm font-medium text-gray-700 w-20 md:w-28 text-right">Rs. {mc.amount.toLocaleString()}</span>
                 </div>
               );
             })}

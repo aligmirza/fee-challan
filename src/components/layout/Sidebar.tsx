@@ -45,7 +45,12 @@ const navItems = [
   { label: 'Help', href: '/help', icon: HelpCircle },
 ];
 
-export default function Sidebar() {
+interface SidebarProps {
+  mobileOpen?: boolean;
+  onMobileClose?: () => void;
+}
+
+export default function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
   const [collapsed, setCollapsed] = useState(false);
   const pathname = usePathname();
 
@@ -56,9 +61,16 @@ export default function Sidebar() {
 
   return (
     <aside
-      className={`flex-shrink-0 h-screen flex flex-col z-30 transition-all duration-300 sticky top-0 ${
-        collapsed ? 'w-[68px]' : 'w-[260px]'
-      }`}
+      className={[
+        'flex-shrink-0 flex flex-col z-50',
+        // Mobile: fixed drawer, slides in/out
+        'fixed inset-y-0 left-0 h-full w-[260px]',
+        'transition-transform duration-300',
+        mobileOpen ? 'translate-x-0' : '-translate-x-full',
+        // Desktop: sticky, collapsible
+        'md:sticky md:top-0 md:h-screen md:translate-x-0 md:transition-all md:duration-300',
+        collapsed ? 'md:w-[68px]' : 'md:w-[260px]',
+      ].join(' ')}
       style={{ backgroundColor: '#1a365d' }}
     >
       {/* Logo / Institute Name */}
@@ -67,12 +79,21 @@ export default function Sidebar() {
           <GraduationCap className="w-5 h-5 text-white" />
         </div>
         {!collapsed && (
-          <div className="overflow-hidden">
+          <div className="overflow-hidden flex-1">
             <h1 className="text-white font-bold text-sm leading-tight truncate">
               Fee Challan
             </h1>
             <p className="text-blue-200 text-xs truncate">Management System</p>
           </div>
+        )}
+        {/* Mobile close button */}
+        {onMobileClose && (
+          <button
+            onClick={onMobileClose}
+            className="md:hidden ml-auto p-1 text-white/70 hover:text-white"
+          >
+            <ChevronLeft className="w-5 h-5" />
+          </button>
         )}
       </div>
 
@@ -85,6 +106,7 @@ export default function Sidebar() {
             <Link
               key={item.href}
               href={item.href}
+              onClick={onMobileClose}
               className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 group ${
                 active
                   ? 'bg-white/15 text-white shadow-sm'
