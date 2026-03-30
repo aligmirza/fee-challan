@@ -63,14 +63,23 @@ See [BUILD.md](BUILD.md) for detailed build instructions.
 
 ### Fee Management (`/fee-management`)
 - **Fee Heads:** Create and manage fee categories (tuition, lab, transport, etc.)
-- **Fee Structures:** Assign amounts per fee head per class with totals
-- **Concession Templates:** Create discount rules (percentage or fixed amount)
-- **Student Concessions:** Search students and assign/remove concessions
+- **Fee Structures:** Assign default amounts per fee head per class — this is the base fee every student in that class pays
+- **Concession Templates:** Create reusable discount rules (percentage, fixed amount, or full waiver)
+- **Student Concessions:** Search students and assign permanent concessions (e.g. scholarship, staff child) — auto-applied at every challan generation
+
+### Class Management (`/classes`)
+- Add, edit, and delete classes per campus
+- Set display order and academic year per class
+- Activate/deactivate classes
+- Manage sections within each class (add, edit, delete)
+- Set class teacher per section
+- Deletion blocked if students are assigned to a class or section
 
 ### Challan Generation (`/challan`)
 - Search and select a student
 - Auto-loads fee structure based on class/campus
 - Shows fee breakdown: original, concession, one-time adjustments, net amount
+- **Include/Exclude fee types per challan** — uncheck any fee head to remove it from this challan only (e.g. exclude Transport Fee for a student who doesn't use transport)
 - Displays active concessions (staff child, scholarship, sibling discount, etc.)
 - Generates unique challan number (e.g., `CTY-CHN-2026-03-00001`)
 - If challan already exists, shows it with options to view/print or edit fee details
@@ -117,7 +126,6 @@ See [BUILD.md](BUILD.md) for detailed build instructions.
 ### Campus Management (`/campus`)
 - Multi-campus support
 - Campus details: name, code, address, contact, email, tagline
-- Manage classes and sections per campus
 - Activate/deactivate campuses
 
 ### Reports (`/reports`)
@@ -180,8 +188,10 @@ See [BUILD.md](BUILD.md) for detailed build instructions.
 | `/api/families/[id]` | GET, PUT | Family details with siblings |
 | `/api/campuses` | GET, POST | List/create campuses |
 | `/api/campuses/[id]` | GET, PUT, DELETE | Campus CRUD |
-| `/api/classes` | GET | Classes by campus |
-| `/api/sections` | GET | Sections by class |
+| `/api/classes` | GET, POST | List/create classes |
+| `/api/classes/[id]` | PUT, DELETE | Update/delete class |
+| `/api/sections` | GET, POST | List/create sections |
+| `/api/sections/[id]` | PUT, DELETE | Update/delete section |
 | `/api/fee-heads` | GET, POST | Fee categories |
 | `/api/fee-heads/[id]` | GET, PUT, DELETE | Fee head CRUD |
 | `/api/fee-structures` | GET, POST | Fee amounts by class |
@@ -215,6 +225,7 @@ fee-challan/
 │   │   ├── bulk-generation/    # Bulk challan generation
 │   │   ├── campus/             # Campus management
 │   │   ├── challan/            # Challan generation & detail
+│   │   ├── classes/            # Class & section management
 │   │   ├── collections/        # Fee collection
 │   │   ├── family-voucher/     # Family voucher generation
 │   │   ├── fee-management/     # Fee heads, structures, concessions

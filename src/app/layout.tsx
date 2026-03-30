@@ -22,7 +22,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`${inter.variable} h-full`}>
-      <body className="h-full bg-gray-50 font-sans antialiased" style={{ fontFamily: 'var(--font-inter), sans-serif' }}>
+      <body className="h-full bg-gray-50 font-sans antialiased" style={{ fontFamily: 'var(--font-inter), sans-serif' }} suppressHydrationWarning>
         <CampusProvider>
           <div className="flex h-full">
             {/* Sidebar */}

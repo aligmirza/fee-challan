@@ -40,7 +40,7 @@ export default function StudentManagement() {
   const [importResult, setImportResult] = useState<{ imported: number; skipped: number; errors: string[] } | null>(null);
   const [importing, setImporting] = useState(false);
 
-  useEffect(() => { fetch(`/api/classes?campus_id=${selectedCampusId}`).then(r => r.json()).then(setClasses).catch(() => {}); }, [selectedCampusId]);
+  useEffect(() => { fetch(`/api/classes?campus_id=${selectedCampusId}`).then(r => r.json()).then(d => { if (Array.isArray(d)) setClasses(d); }).catch(() => {}); }, [selectedCampusId]);
 
   const loadStudents = useCallback(() => {
     setLoading(true);
@@ -54,7 +54,7 @@ export default function StudentManagement() {
 
   useEffect(() => {
     if (editStudent?.class_id) {
-      fetch(`/api/sections?class_id=${editStudent.class_id}`).then(r => r.json()).then(setSections).catch(() => {});
+      fetch(`/api/sections?class_id=${editStudent.class_id}`).then(r => r.json()).then(d => { if (Array.isArray(d)) setSections(d); }).catch(() => {});
     }
   }, [editStudent?.class_id]);
 

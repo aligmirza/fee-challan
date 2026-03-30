@@ -24,12 +24,12 @@ export default function BulkGenerationPage() {
   const [result, setResult] = useState<{ challansGenerated: number; vouchersGenerated: number; totalAmount: number } | null>(null);
 
   useEffect(() => {
-    fetch(`/api/classes?campus_id=${selectedCampusId}`).then(r => r.json()).then(setClasses).catch(() => {});
+    fetch(`/api/classes?campus_id=${selectedCampusId}`).then(r => r.json()).then(d => { if (Array.isArray(d)) setClasses(d); }).catch(() => {});
   }, [selectedCampusId]);
 
   useEffect(() => {
     if (!selectedClass) { setSections([]); return; }
-    fetch(`/api/sections?class_id=${selectedClass}`).then(r => r.json()).then(setSections).catch(() => {});
+    fetch(`/api/sections?class_id=${selectedClass}`).then(r => r.json()).then(d => { if (Array.isArray(d)) setSections(d); }).catch(() => {});
   }, [selectedClass]);
 
   const loadPreview = async () => {

@@ -30,7 +30,7 @@ function FamilyVoucherContent() {
     if (searchQuery.length < 2) { setFamilies([]); return; }
     const timer = setTimeout(() => {
       fetch(`/api/families?search=${encodeURIComponent(searchQuery)}`)
-        .then(r => r.json()).then(setFamilies).catch(() => {});
+        .then(r => r.json()).then(d => { if (Array.isArray(d)) setFamilies(d); }).catch(() => {});
     }, 300);
     return () => clearTimeout(timer);
   }, [searchQuery]);

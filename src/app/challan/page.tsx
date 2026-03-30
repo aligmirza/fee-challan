@@ -30,13 +30,14 @@ function ChallanContent() {
   const [generating, setGenerating] = useState(false);
   const [generated, setGenerated] = useState<{ challan_no: string; id: number; alreadyExists?: boolean } | null>(null);
   const [oneTimeAdjustments, setOneTimeAdjustments] = useState<Record<number, { amount: number; reason: string }>>({});
+  const [excludedFees, setExcludedFees] = useState<Set<number>>(new Set());
 
   // Search students
   useEffect(() => {
     if (searchQuery.length < 2) { setSearchResults([]); return; }
     const timer = setTimeout(() => {
       fetch(`/api/students?campus_id=${selectedCampusId}&search=${encodeURIComponent(searchQuery)}`)
-        .then(r => r.json()).then(setSearchResults).catch(() => {});
+        .then(r => r.json()).then(d => { if (Array.isArray(d)) setSearchResults(d); }).catch(() => {});
     }, 300);
     return () => clearTimeout(timer);
   }, [searchQuery, selectedCampusId]);
@@ -55,6 +56,7 @@ function ChallanContent() {
     setSearchQuery('');
     setSearchResults([]);
     setGenerated(null);
+    setExcludedFees(new Set());
     try {
       const [feeRes, concRes] = await Promise.all([
         fetch(`/api/fee-structures?campus_id=${selectedCampusId}&class_id=${student.class_id}`).then(r => r.json()),
@@ -92,23 +94,26 @@ function ChallanContent() {
     }));
   };
 
-  const totalOriginal = feeItems.reduce((s, i) => s + i.amount, 0);
-  const totalConcession = feeItems.reduce((s, i) => s + i.concession, 0) + Object.values(oneTimeAdjustments).reduce((s, a) => s + a.amount, 0);
-  const grandTotal = feeItems.reduce((s, i) => s + i.net, 0);
+  const includedItems = feeItems.filter(i => !excludedFees.has(i.fee_head_id));
+  const totalOriginal = includedItems.reduce((s, i) => s + i.amount, 0);
+  const totalConcession = includedItems.reduce((s, i) => s + i.concession, 0) + includedItems.reduce((s, i) => s + (oneTimeAdjustments[i.fee_head_id]?.amount || 0), 0);
+  const grandTotal = includedItems.reduce((s, i) => s + i.net - (oneTimeAdjustments[i.fee_head_id]?.amount || 0), 0);
 
   const generateChallan = async () => {
     if (!selectedStudent) return;
     setGenerating(true);
     try {
-      // Send runtime-edited fee items and one-time adjustments to API
-      const items = feeItems.map(item => ({
-        fee_head_id: item.fee_head_id,
-        original_amount: item.amount,
-        concession_amount: item.concession,
-        one_time_adjustment: oneTimeAdjustments[item.fee_head_id]?.amount || 0,
-        one_time_reason: oneTimeAdjustments[item.fee_head_id]?.reason || null,
-        net_amount: item.net - (oneTimeAdjustments[item.fee_head_id]?.amount || 0),
-      }));
+      // Send only included fee items
+      const items = feeItems
+        .filter(item => !excludedFees.has(item.fee_head_id))
+        .map(item => ({
+          fee_head_id: item.fee_head_id,
+          original_amount: item.amount,
+          concession_amount: item.concession,
+          one_time_adjustment: oneTimeAdjustments[item.fee_head_id]?.amount || 0,
+          one_time_reason: oneTimeAdjustments[item.fee_head_id]?.reason || null,
+          net_amount: item.net - (oneTimeAdjustments[item.fee_head_id]?.amount || 0),
+        }));
       const res = await fetch('/api/challans/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -177,7 +182,7 @@ function ChallanContent() {
                   <span className="text-gray-500">Roll #{selectedStudent.roll_no}</span>
                 </div>
               </div>
-              <button onClick={() => { setSelectedStudent(null); setFeeItems([]); setGenerated(null); }} className="text-sm text-blue-600 hover:underline">Change Student</button>
+              <button onClick={() => { setSelectedStudent(null); setFeeItems([]); setGenerated(null); setExcludedFees(new Set()); }} className="text-sm text-blue-600 hover:underline">Change Student</button>
             </div>
           </div>
 
@@ -187,6 +192,12 @@ function ChallanContent() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b bg-gray-50">
+                  <th className="py-3 px-3 w-10 text-center">
+                    <input type="checkbox" title="Include all"
+                      checked={feeItems.every(i => !excludedFees.has(i.fee_head_id))}
+                      onChange={e => setExcludedFees(e.target.checked ? new Set() : new Set(feeItems.map(i => i.fee_head_id)))}
+                      className="rounded" />
+                  </th>
                   <th className="text-left py-3 px-4">Fee Head</th>
                   <th className="text-right py-3 px-4">Original</th>
                   <th className="text-right py-3 px-4">Concession</th>
@@ -195,40 +206,57 @@ function ChallanContent() {
                 </tr>
               </thead>
               <tbody>
-                {feeItems.map(item => (
-                  <tr key={item.fee_head_id} className="border-b hover:bg-gray-50">
-                    <td className="py-3 px-4">{item.fee_head_name}</td>
-                    <td className="py-3 px-4 text-right">
-                      <input type="number" min="0" value={item.amount}
-                        onChange={e => {
-                          const newAmt = Number(e.target.value);
-                          setFeeItems(prev => prev.map(fi => fi.fee_head_id === item.fee_head_id ? { ...fi, amount: newAmt, net: newAmt - fi.concession } : fi));
-                        }}
-                        className="w-24 text-right border rounded px-2 py-1 text-sm" />
-                    </td>
-                    <td className="py-3 px-4 text-right text-red-600">
-                      <input type="number" min="0" value={item.concession}
-                        onChange={e => {
-                          const newDisc = Number(e.target.value);
-                          setFeeItems(prev => prev.map(fi => fi.fee_head_id === item.fee_head_id ? { ...fi, concession: newDisc, net: fi.amount - newDisc } : fi));
-                        }}
-                        className="w-20 text-right border rounded px-2 py-1 text-sm text-red-600" />
-                    </td>
-                    <td className="py-3 px-4 text-right">
-                      <input
-                        type="number" min="0" placeholder="0"
-                        className="w-20 text-right border rounded px-2 py-1 text-sm"
-                        value={oneTimeAdjustments[item.fee_head_id]?.amount || ''}
-                        onChange={e => applyOneTimeAdjustment(item.fee_head_id, Number(e.target.value), '')}
-                      />
-                    </td>
-                    <td className="py-3 px-4 text-right font-medium">Rs. {item.net.toLocaleString()}</td>
-                  </tr>
-                ))}
+                {feeItems.map(item => {
+                  const excluded = excludedFees.has(item.fee_head_id);
+                  return (
+                    <tr key={item.fee_head_id} className={`border-b transition ${excluded ? 'opacity-40 bg-gray-50' : 'hover:bg-gray-50'}`}>
+                      <td className="py-3 px-3 text-center">
+                        <input type="checkbox" checked={!excluded}
+                          onChange={e => {
+                            setExcludedFees(prev => {
+                              const next = new Set(prev);
+                              if (e.target.checked) next.delete(item.fee_head_id);
+                              else next.add(item.fee_head_id);
+                              return next;
+                            });
+                          }}
+                          className="rounded" />
+                      </td>
+                      <td className={`py-3 px-4 ${excluded ? 'line-through text-gray-400' : ''}`}>{item.fee_head_name}</td>
+                      <td className="py-3 px-4 text-right">
+                        <input type="number" min="0" value={item.amount} disabled={excluded}
+                          onChange={e => {
+                            const newAmt = Number(e.target.value);
+                            setFeeItems(prev => prev.map(fi => fi.fee_head_id === item.fee_head_id ? { ...fi, amount: newAmt, net: newAmt - fi.concession } : fi));
+                          }}
+                          className="w-24 text-right border rounded px-2 py-1 text-sm disabled:bg-gray-100 disabled:cursor-not-allowed" />
+                      </td>
+                      <td className="py-3 px-4 text-right text-red-600">
+                        <input type="number" min="0" value={item.concession} disabled={excluded}
+                          onChange={e => {
+                            const newDisc = Number(e.target.value);
+                            setFeeItems(prev => prev.map(fi => fi.fee_head_id === item.fee_head_id ? { ...fi, concession: newDisc, net: fi.amount - newDisc } : fi));
+                          }}
+                          className="w-20 text-right border rounded px-2 py-1 text-sm text-red-600 disabled:bg-gray-100 disabled:cursor-not-allowed" />
+                      </td>
+                      <td className="py-3 px-4 text-right">
+                        <input type="number" min="0" placeholder="0" disabled={excluded}
+                          className="w-20 text-right border rounded px-2 py-1 text-sm disabled:bg-gray-100 disabled:cursor-not-allowed"
+                          value={oneTimeAdjustments[item.fee_head_id]?.amount || ''}
+                          onChange={e => applyOneTimeAdjustment(item.fee_head_id, Number(e.target.value), '')}
+                        />
+                      </td>
+                      <td className={`py-3 px-4 text-right font-medium ${excluded ? 'text-gray-300' : ''}`}>
+                        {excluded ? '—' : `Rs. ${(item.net - (oneTimeAdjustments[item.fee_head_id]?.amount || 0)).toLocaleString()}`}
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
               <tfoot>
                 <tr className="border-t-2 font-semibold">
-                  <td className="py-3 px-4">Total</td>
+                  <td></td>
+                  <td className="py-3 px-4">Total <span className="text-xs font-normal text-gray-400">({includedItems.length}/{feeItems.length} included)</span></td>
                   <td className="py-3 px-4 text-right">Rs. {totalOriginal.toLocaleString()}</td>
                   <td className="py-3 px-4 text-right text-red-600">- Rs. {totalConcession.toLocaleString()}</td>
                   <td className="py-3 px-4"></td>
@@ -294,7 +322,7 @@ function ChallanContent() {
                   className="flex items-center gap-2 bg-amber-600 text-white px-4 py-2 rounded-lg hover:bg-amber-700 disabled:opacity-50 transition text-sm font-medium">
                   <FileText size={16} /> {generating ? 'Updating...' : 'Update Fee Details'}
                 </button>
-                <button onClick={() => { setSelectedStudent(null); setFeeItems([]); setGenerated(null); }}
+                <button onClick={() => { setSelectedStudent(null); setFeeItems([]); setGenerated(null); setExcludedFees(new Set()); }}
                   className="text-sm text-amber-600 hover:underline px-4 py-2">Generate Another</button>
               </div>
             </div>
@@ -309,7 +337,7 @@ function ChallanContent() {
                 <Link href={`/challan/${generated.id}`} className="flex items-center gap-2 bg-white border border-green-300 text-green-700 px-4 py-2 rounded-lg hover:bg-green-50 transition text-sm font-medium">
                   <Printer size={16} /> View & Print
                 </Link>
-                <button onClick={() => { setSelectedStudent(null); setFeeItems([]); setGenerated(null); }}
+                <button onClick={() => { setSelectedStudent(null); setFeeItems([]); setGenerated(null); setExcludedFees(new Set()); }}
                   className="text-sm text-green-600 hover:underline px-4 py-2">Generate Another</button>
               </div>
             </div>

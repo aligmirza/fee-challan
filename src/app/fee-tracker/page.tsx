@@ -49,7 +49,7 @@ function RecordPayment() {
     if (searchQuery.length < 2) { setChallans([]); return; }
     const timer = setTimeout(() => {
       fetch(`/api/challans?campus_id=${selectedCampusId}&search=${encodeURIComponent(searchQuery)}&status=unpaid`)
-        .then(r => r.json()).then(setChallans).catch(() => {});
+        .then(r => r.json()).then(d => { if (Array.isArray(d)) setChallans(d); }).catch(() => {});
     }, 300);
     return () => clearTimeout(timer);
   }, [searchQuery, selectedCampusId]);
@@ -124,13 +124,13 @@ function StudentLedger() {
 
   useEffect(() => {
     if (search.length < 2) { setStudents([]); return; }
-    const t = setTimeout(() => { fetch(`/api/students?campus_id=${selectedCampusId}&search=${encodeURIComponent(search)}`).then(r => r.json()).then(setStudents).catch(() => {}); }, 300);
+    const t = setTimeout(() => { fetch(`/api/students?campus_id=${selectedCampusId}&search=${encodeURIComponent(search)}`).then(r => r.json()).then(d => { if (Array.isArray(d)) setStudents(d); }).catch(() => {}); }, 300);
     return () => clearTimeout(t);
   }, [search, selectedCampusId]);
 
   useEffect(() => {
     if (!selectedId) return;
-    fetch(`/api/challans?student_id=${selectedId}`).then(r => r.json()).then(setChallans).catch(() => {});
+    fetch(`/api/challans?student_id=${selectedId}`).then(r => r.json()).then(d => { if (Array.isArray(d)) setChallans(d); }).catch(() => {});
   }, [selectedId]);
 
   return (
@@ -170,7 +170,7 @@ function ClassTracker() {
   const [selectedClass, setSelectedClass] = useState('');
   const [students, setStudents] = useState<{ name: string; months: Record<number, string> }[]>([]);
 
-  useEffect(() => { fetch(`/api/classes?campus_id=${selectedCampusId}`).then(r => r.json()).then(setClasses).catch(() => {}); }, [selectedCampusId]);
+  useEffect(() => { fetch(`/api/classes?campus_id=${selectedCampusId}`).then(r => r.json()).then(d => { if (Array.isArray(d)) setClasses(d); }).catch(() => {}); }, [selectedCampusId]);
 
   useEffect(() => {
     if (!selectedClass) return;
@@ -231,7 +231,7 @@ function Defaulters() {
   const [defaulters, setDefaulters] = useState<{ name: string; father_name: string; class_name: string; section_name: string; amount_due: number; due_date: string; contact_phone: string }[]>([]);
 
   useEffect(() => {
-    fetch(`/api/reports/defaulters?campus_id=${selectedCampusId}`).then(r => r.json()).then(setDefaulters).catch(() => {});
+    fetch(`/api/reports/defaulters?campus_id=${selectedCampusId}`).then(r => r.json()).then(d => { if (Array.isArray(d)) setDefaulters(d); }).catch(() => {});
   }, [selectedCampusId]);
 
   return (
@@ -266,7 +266,7 @@ function DailyReport() {
   const [payments, setPayments] = useState<{ receipt_no: string; student_name: string; amount_paid: number; payment_mode: string }[]>([]);
 
   useEffect(() => {
-    fetch(`/api/payments?campus_id=${selectedCampusId}&date=${date}`).then(r => r.json()).then(setPayments).catch(() => {});
+    fetch(`/api/payments?campus_id=${selectedCampusId}&date=${date}`).then(r => r.json()).then(d => { if (Array.isArray(d)) setPayments(d); }).catch(() => {});
   }, [date, selectedCampusId]);
 
   const total = payments.reduce((s, p) => s + (p.amount_paid || 0), 0);

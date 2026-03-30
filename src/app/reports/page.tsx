@@ -42,12 +42,12 @@ function DefaulterReport() {
   const [filterClass, setFilterClass] = useState('');
   const [defaulters, setDefaulters] = useState<{ name: string; father_name: string; class_name: string; section_name: string; amount_due: number; due_date: string; contact_phone: string; month: number; year: number }[]>([]);
 
-  useEffect(() => { fetch(`/api/classes?campus_id=${selectedCampusId}`).then(r => r.json()).then(setClasses).catch(() => {}); }, [selectedCampusId]);
+  useEffect(() => { fetch(`/api/classes?campus_id=${selectedCampusId}`).then(r => r.json()).then(d => { if (Array.isArray(d)) setClasses(d); }).catch(() => {}); }, [selectedCampusId]);
 
   useEffect(() => {
     const params = new URLSearchParams({ campus_id: String(selectedCampusId) });
     if (filterClass) params.set('class_id', filterClass);
-    fetch(`/api/reports/defaulters?${params}`).then(r => r.json()).then(setDefaulters).catch(() => {});
+    fetch(`/api/reports/defaulters?${params}`).then(r => r.json()).then(d => { if (Array.isArray(d)) setDefaulters(d); }).catch(() => {});
   }, [selectedCampusId, filterClass]);
 
   const totalDue = defaulters.reduce((s, d) => s + (d.amount_due || 0), 0);
@@ -93,7 +93,7 @@ function CollectionSummary() {
   const [payments, setPayments] = useState<{ receipt_no: string; student_name: string; amount_paid: number; payment_mode: string; payment_date: string }[]>([]);
 
   useEffect(() => {
-    fetch(`/api/payments?campus_id=${selectedCampusId}`).then(r => r.json()).then(setPayments).catch(() => {});
+    fetch(`/api/payments?campus_id=${selectedCampusId}`).then(r => r.json()).then(d => { if (Array.isArray(d)) setPayments(d); }).catch(() => {});
   }, [selectedCampusId]);
 
   const total = payments.reduce((s, p) => s + (p.amount_paid || 0), 0);
@@ -134,7 +134,7 @@ function ArrearsReport() {
   const [challans, setChallans] = useState<{ student_name: string; class_name: string; challan_no: string; month: number; year: number; grand_total: number; status: string }[]>([]);
 
   useEffect(() => {
-    fetch(`/api/challans?campus_id=${selectedCampusId}&status=overdue`).then(r => r.json()).then(setChallans).catch(() => {});
+    fetch(`/api/challans?campus_id=${selectedCampusId}&status=overdue`).then(r => r.json()).then(d => { if (Array.isArray(d)) setChallans(d); }).catch(() => {});
   }, [selectedCampusId]);
 
   const totalArrears = challans.reduce((s, c) => s + (c.grand_total || 0), 0);

@@ -128,12 +128,12 @@ function BankSettings() {
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({ bank_name: '', branch_name: '', account_title: '', account_number: '', iban: '' });
 
-  useEffect(() => { fetch(`/api/bank-accounts?campus_id=${selectedCampusId}`).then(r => r.json()).then(setBanks).catch(() => {}); }, [selectedCampusId]);
+  useEffect(() => { fetch(`/api/bank-accounts?campus_id=${selectedCampusId}`).then(r => r.json()).then(data => { if (Array.isArray(data)) setBanks(data); }).catch(() => {}); }, [selectedCampusId]);
 
   const addBank = async () => {
     await fetch('/api/bank-accounts', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...form, campus_id: null }) });
     setShowForm(false); setForm({ bank_name: '', branch_name: '', account_title: '', account_number: '', iban: '' });
-    fetch(`/api/bank-accounts?campus_id=${selectedCampusId}`).then(r => r.json()).then(setBanks);
+    fetch(`/api/bank-accounts?campus_id=${selectedCampusId}`).then(r => r.json()).then(d => { if (Array.isArray(d)) setBanks(d); });
   };
 
   return (

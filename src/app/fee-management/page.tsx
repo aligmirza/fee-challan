@@ -67,7 +67,7 @@ function FeeHeadsTab() {
   const [saved, setSaved] = useState('');
 
   const load = useCallback(() => {
-    fetch('/api/fee-heads').then(r => r.json()).then(setFeeHeads).catch(() => {});
+    fetch('/api/fee-heads').then(r => r.json()).then(d => { if (Array.isArray(d)) setFeeHeads(d); }).catch(() => {});
   }, []);
   useEffect(() => { load(); }, [load]);
 
